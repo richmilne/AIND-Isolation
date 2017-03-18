@@ -36,9 +36,9 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    return float(len(game.get_legal_moves(player)))
     # TODO: finish this function!
     raise NotImplementedError
+from sample_players import improved_score as custom_score
 
 
 class CustomPlayer:
@@ -76,9 +76,11 @@ class CustomPlayer:
         self.search_depth = search_depth
         self.iterative = iterative
         self.score = score_fn
-        self.method = method
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
+
+        self.fn = self.minimax if method == 'minimax' else self.alphabeta
+
 
     def get_move(self, game, legal_moves, time_left):
         """Search for the best move from the available legal moves and return a
@@ -126,7 +128,6 @@ class CustomPlayer:
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
         best = (-1, -1)
-        fn = self.minimax if self.method == 'minimax' else self.alphabeta
         if self.iterative:
             depths = itertools.count(1)
         else:
@@ -138,7 +139,9 @@ class CustomPlayer:
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
             for depth in depths:
-                _, best = fn(game, depth, maximizing_player=True)
+                _, best = self.fn(game, depth, maximizing_player=True)
+                if self.time_left() < 13 * self.TIMER_THRESHOLD:
+                    break
 
         except Timeout:
             # Handle any actions required at timeout, if necessary
@@ -147,18 +150,20 @@ class CustomPlayer:
         # Return the best move from the last completed search iteration
         return best
 
-    def __base_case(self, game, depth):
+    def cut_off_test(self, game, depth):
         utility = game.utility(self)
         if bool(utility):
-            return utility
+            return (True, utility, (-1, -1))
         if not depth:
-            return self.score(game, self)
+            return (True, self.score(game, self), (-1, -1))
+        return (False, None, (-1, -1))
+
+
 
     def __max_value(self, game, depth):
 
-        base = self.__base_case(game, depth)
-        if base is not None:
-            return base, None
+        cut_off, score, move = self.cut_off_test(game, depth)
+        if cut_off: return score, move
 
         v = float('-inf')
         best = None
@@ -170,9 +175,8 @@ class CustomPlayer:
 
     def __min_value(self, game, depth):
 
-        base = self.__base_case(game, depth)
-        if base is not None:
-            return base, None
+        cut_off, score, move = self.cut_off_test(game, depth)
+        if cut_off: return score, move
 
         v = float('inf')
         best = None
@@ -182,12 +186,10 @@ class CustomPlayer:
                 v, best = score, move
         return v, best
 
-
     def __alphabeta_max_value(self, game, alpha, beta, depth):
 
-        base = self.__base_case(game, depth)
-        if base is not None:
-            return base, None
+        cut_off, score, move = self.cut_off_test(game, depth)
+        if cut_off: return score, move
 
         v = float('-inf')
         best = None
@@ -203,9 +205,8 @@ class CustomPlayer:
 
     def __alphabeta_min_value(self, game, alpha, beta, depth):
 
-        base = self.__base_case(game, depth)
-        if base is not None:
-            return base, None
+        cut_off, score, move = self.cut_off_test(game, depth)
+        if cut_off: return score, move
 
         v = float('inf')
         best = None
@@ -218,7 +219,6 @@ class CustomPlayer:
                 break
             beta = min(beta, v)
         return v, best
-
 
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
@@ -299,6 +299,6 @@ class CustomPlayer:
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
 
-        fn = (self.__alphabeta_max_value if maximizing_player else 
+        fn = (self.__alphabeta_max_value if maximizing_player else
               self.__alphabeta_min_value)
         return fn(game, float('-inf'), float('inf'), depth)
