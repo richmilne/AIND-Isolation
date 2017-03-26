@@ -43,15 +43,18 @@ And flips about the lines y = ±x
 
 All in all, we have the following transformed co-ordinates
 
-( x,  y)  Original                 ( y,  x)  Flip about y=x
-( x, -y)  Flip about x-axis        ( y, -x)  Rotate 270°
-(-x,  y)  Flip about y-axis        (-y,  x)  Rotate 90°
-(-x, -y)  Rotate 180°              (-y, -x)  Flip about y=-x
+0: ( x,  y)  Original              4: ( y,  x)  Flip about y=x
+1: ( x, -y)  Flip about x-axis     5: (-y,  x)  Rotate 90°
+2: (-x,  y)  Flip about y-axis     6: ( y, -x)  Rotate 270°
+3: (-x, -y)  Rotate 180°           7: (-y, -x)  Flip about y=-x
 
 So you can see there are 8 options above. To effect a transformation, we either
 swap or leave the two points, and negate either, neither or both. These actions
 can be represented by bit positions in a 3-bit number.
 """
+
+
+
 
 def board_to_coords(game):
 
@@ -68,57 +71,67 @@ def board_to_coords(game):
 
     return coords
 
-def rotate(co_ords, flag, reverse=False):
+def rotate(coords, flag, reverse=False):
+    # Reverse for when you want to reverse, or undo, the effect of a previous
+    # transformation
 
     if not flag:
-        return co_ords
+        return coords
 
     swap =  (flag & 0b100) >> 2
     neg_x = (flag & 0b010) >> 1
     neg_y = (flag & 0b001)
     if reverse and swap:
         neg_x, neg_y = neg_y, neg_x
+    # print('flags:', bin(flag)[2:].zfill(3), swap, neg_x, neg_y, reverse)
+    signs = (1-2*neg_x, 1-2*neg_y)
 
     rotated = []
-    for co_ord in co_ords:
-        if co_ord is None:
+    for coord in coords:
+        if coord is None:
             rotated.append(None)
         else:
-            x, y = co_ord
-            new = ((1 - 2*neg_x) * (y if swap else x),
-                   (1 - 2*neg_y) * (x if swap else y))
+            x, y = [s * c for s, c in zip(signs, coord)]
+            new = (y, x) if swap else (x, y)
             rotated.append(new)
     return rotated
 
-test = [(3, 2), None, (-1, 2), (5, -4), (0, 1), (3, 0), (0, 0), (-2, -6)]
-print(test)
-for flag in range(8):
-    print()
-    print(flag, bin(flag)[2:].zfill(3))
-    rot = rotate(test, flag)
-    print(rot)
-    check = rotate(rot, flag, True)
-    print(check)
-    assert(check==test)
+
+def enum_rotations(coords):
+    all_rotations = [(0, coords)]
+    for flag in range(1, 8):
+        all_rotations.append((flag, rotate(coords, flag)))
+    return all_rotations
 
 
-def enum_rotations(co_ords):
-    all_rotations = [co_ords]
+if __name__ == '__main__':
+    point = (3, 2)
+    tests = {
+        0: ( 3,  2),
+        1: ( 3, -2),
+        2: (-3,  2),
+        3: (-3, -2),
+        4: ( 2,  3),
+        5: (-2,  3),
+        6: ( 2, -3),
+        7: (-2, -3)
+    }
+    for trans, check in tests.items():
+        ans = rotate([point], trans, False)
+        # print(trans, check, ans)
+        assert ans[0] == check
+        assert point == rotate(ans, trans, True)[0]
+
+    test = [(3, 2), None, (-1, 2), (5, -4), (0, 1), (3, 0), (0, 0), (-2, -6)]
+    print(test)
     for flag in range(8):
-        all_rotations.append(rotate(co_ords, flag))
+        print()
+        print(flag, bin(flag)[2:].zfill(3))
+        rot = rotate(test, flag)
+        print(rot)
+        check = rotate(rot, flag, True)
+        print(check)
+        assert(check==test)
 
-
-        swap =  (i & 0b100) >> 2
-        neg_x = (i & 0b010) >> 1
-        neg_y = (i & 0b001)
-        print(swap, neg_x, neg_y)
-        new = [(1-2*neg_x)*(y if swap else x),
-               (1-2*neg_y)*(x if swap else y), i]
-        rotations.append(new)
-    for r in rotations:
-        print(r)
-
-# enum_rotations(test)
-
-
-
+    for flag, rotated in enum_rotations(test):
+        print(bin(flag)[2:].zfill(3), rotated)
