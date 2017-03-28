@@ -4,11 +4,20 @@ import sys
 # Bit pattern 7 (111) reserved for a player co-ord of None
 # Otherwise, board is just a bitmap, with 1 if a cell is occupied.
 
-# Translate co-ords so that board rotations can be done about the centre
+# TODO: Change encoding of players, so that 0 represents a None, i.e. that the
+# player hasn't yet made a move? That way, 0 can represent a completely empty
+# board - whatever the board dimensions...
 
-# xlate all board co-ords up and to left
-up_left = lambda x:None if x is None else (x[0]-2, x[1]-2) 
-down_rt = lambda x:None if x is None else (x[0]+2, x[1]+2) # shift the co-ords back
+# Translate co-ords so that board rotations can be done about the centre
+def create_xlate_fns(offset):
+    # xlate all board co-ords up and to left
+    up_left = lambda x:None if x is None else (x[0]-offset, x[1]-offset)
+    # shift the co-ords back
+    down_rt = lambda x:None if x is None else (x[0]+offset, x[1]+offset)
+    return up_left, down_rt
+
+up_left, down_rt = create_xlate_fns(5)
+
 
 def coord_to_num(coord):
     return coord[0] * 5 + coord[1]
@@ -20,7 +29,7 @@ def num_to_coord(num):
 def format_bitmap(bitmap):
     bit_str = bin(bitmap)[2:].zfill(35)
     return ' '.join((bit_str[:5], bit_str[5:10], bit_str[10:]))
-    
+
 def encode_player(coord):
     if coord is None:
         return 0b11111
@@ -55,7 +64,7 @@ def integer_to_coords(number, offset=lambda x:x):
     player2 = offset(decode_player(number))
     number >>= 5
     player1 = offset(decode_player(number))
-    
+
     return [player1, player2] + sorted(coords)
 
 
@@ -79,7 +88,7 @@ if __name__ == '__main__':
     if debug: print()
     for r in range(5):
         for c in range(5):
-            coord = (r, c)    
+            coord = (r, c)
             num = coord_to_bitmap(coord)
             check = [b for b in bitmap_to_coords(num)]
             match = len(check)==1 and check[0] == coord
@@ -119,15 +128,15 @@ if __name__ == '__main__':
     match = check == all_ones
     if debug or not match:
         print(str(all_ones).rjust(11), format_bitmap(all_ones))
-        print(str(check).rjust(11), format_bitmap(check))        
+        print(str(check).rjust(11), format_bitmap(check))
     assert match
-    
+
     if debug: print()
     players = [None, (0, -1)]
     bitmap = ((31<<5)+(2*5+1))<<25
     check = integer_to_coords(bitmap, up_left)
     match = check == players
     if debug or not match:
-        print(str(bitmap).rjust(11), format_bitmap(bitmap))   
+        print(str(bitmap).rjust(11), format_bitmap(bitmap))
         print(check)
     assert match
