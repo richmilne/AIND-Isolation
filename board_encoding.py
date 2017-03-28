@@ -1,12 +1,8 @@
 import sys
 # Hard-coded for 5 * 5 board
 # Each co-ord can be represented by tup of 2 3-bit numbers
-# Bit pattern 7 (111) reserved for a player co-ord of None
+# Bit pattern 0 reserved for a player co-ord of None
 # Otherwise, board is just a bitmap, with 1 if a cell is occupied.
-
-# TODO: Change encoding of players, so that 0 represents a None, i.e. that the
-# player hasn't yet made a move? That way, 0 can represent a completely empty
-# board - whatever the board dimensions...
 
 # Translate co-ords so that board rotations can be done about the centre
 def create_xlate_fns(offset):
@@ -16,8 +12,7 @@ def create_xlate_fns(offset):
     down_rt = lambda x:None if x is None else (x[0]+offset, x[1]+offset)
     return up_left, down_rt
 
-up_left, down_rt = create_xlate_fns(5)
-
+up_left, down_rt = create_xlate_fns(5//2)
 
 def coord_to_num(coord):
     return coord[0] * 5 + coord[1]
@@ -32,14 +27,14 @@ def format_bitmap(bitmap):
 
 def encode_player(coord):
     if coord is None:
-        return 0b11111
-    return coord_to_num(coord)
+        return 0
+    return coord_to_num(coord) + 1
 
 def decode_player(number):
     player = number & 0b11111
-    if player == 0b11111:
+    if player == 0:
         return None
-    return num_to_coord(player)
+    return num_to_coord(player-1)
 
 def coord_to_bitmap(coord):
     return 1 << (24-coord_to_num(coord))
@@ -115,7 +110,7 @@ if __name__ == '__main__':
                               ( 0, -2), ( 0, -1), ( 0, 0), ( 0, 1), ( 0, 2),
                               ( 1, -2), ( 1, -1), ( 1, 0), ( 1, 1), ( 1, 2),
                               ( 2, -2), ( 2, -1), ( 2, 0), ( 2, 1), ( 2, 2)]
-    all_ones = (2**35)-1
+    all_ones = (2**25)-1
     check = integer_to_coords(all_ones, up_left)
     match = check == all_coords
     if debug or not match:
@@ -133,7 +128,7 @@ if __name__ == '__main__':
 
     if debug: print()
     players = [None, (0, -1)]
-    bitmap = ((31<<5)+(2*5+1))<<25
+    bitmap = ((2*5+1)+1)<<25
     check = integer_to_coords(bitmap, up_left)
     match = check == players
     if debug or not match:
