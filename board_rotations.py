@@ -1,7 +1,6 @@
 import sys
 
 r"""
-
 General Rotation matrix, for     [cos θ  -sin θ]
 θ° rotation anti-clockwise       [sin θ   cos θ]
 
@@ -52,24 +51,6 @@ So you can see there are 8 options above. To effect a transformation, we either
 swap or leave the two points, and negate either, neither or both. These actions
 can be represented by bit positions in a 3-bit number.
 """
-
-
-
-
-def board_to_coords(game):
-
-    # Add an offset so centre of board always (0, 0)?
-    # And then you'd have to add the offset back to your numeric encoding.
-
-    coords = [game.__last_player_move[game.__player_1__],
-              game.__last_player_move[game.__player_2__]]
-
-    for r, row in enumerate(self.__board_state__):
-        for c, col in enumerate(row):
-            if col != BLANK:
-                coords.append((r, c))
-
-    return coords
 
 def rotate(coords, flag, reverse=False):
     # Reverse for when you want to reverse, or undo, the effect of a previous
