@@ -138,16 +138,18 @@ class CustomPlayer:
         else:
             depths = (self.search_depth,)
 
-        limit_factor = 3.2
+        limit_factor = 1#3.2
         msg = 'i:%3d  depth:%3d  nodes: %4d  time: %6.2fms'
         debug = 0
+        # self.nodes = 0
 
         try:
             # The search method call (alpha beta or minimax) should happen in
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            last_node_count = 1
+            last_node_count = 1#self.nodes = 1
+            last_layer = 1
             for i, depth in enumerate(depths):
                 # self.nodes = 0 - reset by minimax / alphabeta routines
                 start_time = curr_time_millis()
@@ -156,16 +158,29 @@ class CustomPlayer:
                 time_left = self.time_left()
                 time_per_node = elapsed / self.nodes
 
-                branch_factor = self.nodes / last_node_count
+                esti_branch = self.nodes / last_node_count
+                this_layer = self.nodes - last_node_count
+                real_branch = this_layer / last_layer if last_layer else 1
+
+                # In a fully populated tree, the estimated branching factor is
+                # always an overestimate, but the integer part converges to the
+                # real branching factor within 4, 5 iterations, and the larger
+                # the branching factor the sooner.
+
+                # More of a problem is that the branching factor generally
+                # increases in the opening stages of the game, and decreases in
+                # the closing stages. So your estimates will always generally
+                # lag behind the real factor, may underestimate in the opening
+                # stages, and overestimate in the end game.
+
                 # If you take the next largest integer branch factor, you could
-                # probably reduce the time limit factor..
-                # branch_factor = ceil(branch_factor)
+                # probably reduce the time limit_factor..
+                # esti_branch = ceil(esti_branch)
 
-                # id_nodes = ((branch_factor ** depth) - 1)
-                # id_nodes /= (branch_factor - 1)
+                # id_nodes = ((esti_branch ** depth) - 1)
+                # id_nodes /= (esti_branch - 1)
 
-                next_level = (branch_factor ** (depth))
-                # Not (depth+1), as our depth iterator already starts at 1
+                next_level = (esti_branch ** (depth+1))
                 pred_nodes = self.nodes + next_level
                 pred_time = pred_nodes * time_per_node
 
@@ -174,9 +189,13 @@ class CustomPlayer:
                     print(msg % (i, depth, self.nodes, elapsed), end='  ')
                     print('time left: %6.2fms' % time_left, end='  ')
                     print('time/node: %6.2fμs'%(time_per_node*1000),end='  ')
-                    print('branch factor: %3.1f' % branch_factor,end='  ')
+                    print('last layer: %4d' % last_layer,end='  ')
+                    print('esti branch: %3.1f' % esti_branch,end='  ')
+                    print('real branch: %3.1f' % real_branch,end='  ')
+                    print('next level: %5.1f' % next_level,end='  ')
                     print('pred nodes: %7.1f' % pred_nodes, end='  ')
                     print('pred time: %7.2f' % pred_time)
+                last_layer = this_layer
                 last_node_count = self.nodes
                 limit = limit_factor * pred_time
                 # if self.time_left() < 13 * self.TIMER_THRESHOLD:
@@ -186,6 +205,7 @@ class CustomPlayer:
 
         except Timeout:
             # Handle any actions required at timeout, if necessary
+            if debug: print('timeout exception thrown')
             pass
 
         # Return the best move from the last completed search iteration
@@ -321,15 +341,8 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        self.nodes = 0
-        return self._minimax_alphabeta(game, depth, maximizing_player,
-                                       alphabeta=False)
-
-        fn = self.__max_value if maximizing_player else self.__min_value
-        return fn(game, depth)
-
+        self.nodes = 1
+        return self._minimax_alphabeta(game, depth, maximizing_player, False)
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -369,12 +382,6 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        self.nodes = 0
+        self.nodes = 1
         return self._minimax_alphabeta(game, depth, maximizing_player, True,
                                        float('-inf'), float('inf'))
-
-        fn = (self.__alphabeta_max_value if maximizing_player else 
-              self.__alphabeta_min_value)
-        return fn(game, float('-inf'), float('inf'), depth)
