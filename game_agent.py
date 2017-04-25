@@ -1,3 +1,4 @@
+# encoding: utf8
 """This file contains all the classes you must complete for this project.
 
 You can use the test cases in agent_test.py to help during development, and
@@ -121,8 +122,6 @@ class CustomPlayer:
 
         self.time_left = time_left
 
-        # TODO: finish this function!
-
         # Perform any required initializations, including selecting an initial
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
@@ -157,8 +156,11 @@ class CustomPlayer:
             return (True, self.score(game, self), (-1, -1))
         return (False, None, (-1, -1))
 
-    def _minimax_alphabeta(self, game, depth, maximise, alphabeta,
+    def _minimax_alphabeta(self, game, depth, maximise, alphabeta=False,
                            alpha=None, beta=None):
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise Timeout()
 
         cut_off, score, move = self.cut_off_test(game, depth)
         if cut_off: return score, move
@@ -168,7 +170,8 @@ class CustomPlayer:
         max_or_min = not maximise
         v = float('-inf') if maximise else float('inf')
 
-        for move in game.get_legal_moves():
+        legal_moves = game.get_legal_moves()
+        for move in legal_moves:
             args = (game.forecast_move(move), deeper, max_or_min, alphabeta)
             if alphabeta:
                 args += (alpha, beta)
@@ -183,7 +186,7 @@ class CustomPlayer:
                 if cmp: break
                 alpha, beta = ((max(alpha, v), beta) if maximise else
                                (alpha,  min(beta, v)))
-            # if self.time_left() < self.TIMER_THRESHOLD: break
+
         return v, best
 
     def minimax(self, game, depth, maximizing_player=True):
@@ -217,10 +220,7 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        return self._minimax_alphabeta(game, depth, maximizing_player,
-                                       alphabeta=False)
+        return self._minimax_alphabeta(game, depth, maximizing_player)
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -260,7 +260,5 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
         return self._minimax_alphabeta(game, depth, maximizing_player, True,
-                                       float('-inf'), float('inf'))
+                                                                    alpha, beta)
