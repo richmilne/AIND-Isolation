@@ -186,66 +186,6 @@ class CustomPlayer:
             # if self.time_left() < self.TIMER_THRESHOLD: break
         return v, best
 
-    def __max_value(self, game, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('-inf')
-        best = None
-        for move in game.get_legal_moves():
-            score, _ = self.__min_value(game.forecast_move(move), depth-1)
-            if score > v:
-                v, best = score, move
-        return v, best
-
-    def __min_value(self, game, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('inf')
-        best = None
-        for move in game.get_legal_moves():
-            score, _ = self.__max_value(game.forecast_move(move), depth-1)
-            if score < v:
-                v, best = score, move
-        return v, best
-
-    def __alphabeta_max_value(self, game, alpha, beta, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('-inf')
-        best = None
-        for move in game.get_legal_moves(self):
-            args = (game.forecast_move(move), alpha, beta, depth-1)
-            score, _ = self.__alphabeta_min_value(*args)
-            if score > v:
-                v, best = score, move
-            if v >= beta:
-                break
-            alpha = max(alpha, v)
-        return v, best
-
-    def __alphabeta_min_value(self, game, alpha, beta, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('inf')
-        best = None
-        for move in game.get_legal_moves():
-            args = (game.forecast_move(move), alpha, beta, depth-1)
-            score, _ = self.__alphabeta_max_value(*args)
-            if score < v:
-                v, best = score, move
-            if v <= alpha:
-                break
-            beta = min(beta, v)
-        return v, best
-
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
 
@@ -281,10 +221,6 @@ class CustomPlayer:
             raise Timeout()
         return self._minimax_alphabeta(game, depth, maximizing_player,
                                        alphabeta=False)
-
-        fn = self.__max_value if maximizing_player else self.__min_value
-        return fn(game, depth)
-
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -328,7 +264,3 @@ class CustomPlayer:
             raise Timeout()
         return self._minimax_alphabeta(game, depth, maximizing_player, True,
                                        float('-inf'), float('inf'))
-
-        fn = (self.__alphabeta_max_value if maximizing_player else 
-              self.__alphabeta_min_value)
-        return fn(game, float('-inf'), float('inf'), depth)
