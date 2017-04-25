@@ -10,6 +10,8 @@ relative strength using tournament.py and include the results in your report.
 import itertools
 import random
 
+from sample_players import cut_off_reach_score
+
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
     pass
@@ -37,9 +39,7 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
-from sample_players import improved_score as custom_score
+    return cut_off_reach_score(game, player)
 
 
 class CustomPlayer:
@@ -117,19 +117,16 @@ class CustomPlayer:
             Board coordinates corresponding to a legal move; may return
             (-1, -1) if there are no available legal moves.
         """
+        best = (-1, -1) if not legal_moves else random.choice(legal_moves)
         if not legal_moves:
-            return (-1, -1)
+            return best
 
         self.time_left = time_left
 
         # Perform any required initializations, including selecting an initial
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
-        best = (-1, -1)
-        if self.iterative:
-            depths = itertools.count(1)
-        else:
-            depths = (self.search_depth,)
+        depths = itertools.count(1) if self.iterative else (self.search_depth,)
 
         try:
             # The search method call (alpha beta or minimax) should happen in

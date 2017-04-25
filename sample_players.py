@@ -222,7 +222,7 @@ class RandomPlayer():
             A randomly selected legal move; may return (-1, -1) if there are
             no available legal moves.
         """
-        return (-1, -1) if not legal moves else random.choice(legal_moves)
+        return (-1, -1) if not legal_moves else random.choice(legal_moves)
 
 
 class GreedyPlayer():
