@@ -131,7 +131,7 @@ def makeEvalTable(table):
 
 def makeEvalStop(limit, timer, value=None):
     """Use a closure to create a heuristic function that forces the search
-    timer to expire when a fixed number of node expansions have been perfomred
+    timer to expire when a fixed number of node expansions have been performed
     during the search. This ensures that the search algorithm should always be
     in a predictable state regardless of node expansion order.
 
