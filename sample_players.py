@@ -96,6 +96,119 @@ def improved_score(game, player):
     return float(own_moves - opp_moves)
 
 
+knight_offsets = [
+              (-2, -1), (-2,  1),
+    (-1, -2),                     (-1,  2),
+    ( 1, -2),                     ( 1,  2),
+              ( 2, -1), ( 2,  1)
+]
+
+adjacent_offsets = [
+    (-1, -1), (-1, 0), (-1, 1),
+    ( 0, -1),          ( 0, 1),
+    ( 1, -1), ( 1, 0), ( 1, 1)
+]
+
+def get_moves(game, move, directions):
+    r, c = move
+    valid_moves = [(r+dr,c+dc) for dr, dc in directions]
+    valid_moves = filter(game.move_is_legal, valid_moves)
+    return valid_moves
+
+
+def find_connected(game, player, direction):
+    # Return a list of all the cells 'connected' to the player's current move.
+    # The definition of connected depends on the way the player is allowed to
+    # move from the current position, which is coded in 'directions', the list
+    # of offsets for each valid move.
+    examined = set([])
+    queue = set([game.get_player_location(player)])
+    while queue:
+        move = queue.pop()
+        queue |= (set(get_moves(game, move, direction)) - examined)
+        examined.add(move)
+    return examined
+
+
+def reachable(game, player):
+    return find_connected(game, player, knight_offsets)
+
+
+def adjacent(game, player):
+    return find_connected(game, player, adjacent_offsets)
+
+
+def reachable_score(game, player, relative=False):
+    if game.is_loser(player):
+        return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+
+    own_reachable = reachable(game, player)
+    opp_reachable = set([])
+    if relative:
+        opp_reachable = reachable(game, game.get_opponent(player))
+    return float(len(own_reachable) - len(opp_reachable))
+
+
+def rel_reachable_score(game, player):
+    return reachable_score(game, player, relative=True)
+
+
+def cut_off(game, player, relative=False):
+    if game.is_loser(player):
+        return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+
+    own_adjacent = adjacent(game, player)
+    opp = game.get_opponent(player)
+    if game.get_player_location(opp) in own_adjacent:
+        # Will never be the case! The opponent's position is marked as occupied
+        # on the board, so it will never be returned as a valid move - unless
+        # you change the function which enumerates the moves!
+
+        # They're not cut off; devolve to improved score
+        return improved_score(game, player)
+
+    # Otherwise, return the amount of adjacent, plus a booster to indicate
+    # that you've cut your opponent off.
+    score = (self.width * self.height) + len(own_adjacent)
+    return float(score)
+    
+def cut_off_reach(game, player):
+    # Not just how many squares are potentially reachable from your position -
+    # but also whether you and your opponent are likely to overlap. It is
+    # possible to place players so their moves will never overlap. Also, if one
+    # player has cut the other off, their positions will never overlap, and
+    # neither player can block the other further.
+    #
+    # .x.xo.o.
+    # x..ox..o
+    # ..X..O..       Capital X, O: initial positions
+    # x..ox..o       Lowercase letters: potential moves
+    # .x.xo.o.
+    if game.is_loser(player):
+        return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+
+    own_reachable = reachable(game, player)
+    opp_reachable = reachable(game, game.get_opponent(player))
+    common = own_reachable & opp_reachable
+
+    own_score = own_reachable - common
+    opp_score = opp_reachable - common
+    score = len(own_score) - len(opp_score)
+    cut_off_bonus = bool(not len(common)) * (game.width*game.height)
+    cut_off_bonus *= (-1 if score < 0 else 1)
+
+    return float(score + cut_off_bonus)
+
+
+# See https://github.com/on2valhalla/Isola
+# (myMoves - 3*opMoves) * filledSpaces
+
 class RandomPlayer():
     """Player that chooses a move randomly."""
 
