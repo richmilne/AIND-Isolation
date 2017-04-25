@@ -1,3 +1,4 @@
+# encoding: utf8
 """This file contains all the classes you must complete for this project.
 
 You can use the test cases in agent_test.py to help during development, and
@@ -8,6 +9,10 @@ relative strength using tournament.py and include the results in your report.
 """
 import itertools
 import random
+import timeit
+from math import ceil
+
+curr_time_millis = lambda: 1000 * timeit.default_timer()
 
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
@@ -78,6 +83,7 @@ class CustomPlayer:
         self.score = score_fn
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
+        self.nodes = 0
 
         self.fn = self.minimax if method == 'minimax' else self.alphabeta
 
@@ -132,14 +138,50 @@ class CustomPlayer:
         else:
             depths = (self.search_depth,)
 
+        limit_factor = 3.2
+        msg = 'i:%3d  depth:%3d  nodes: %4d  time: %6.2fms'
+        debug = 0
+
         try:
             # The search method call (alpha beta or minimax) should happen in
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            for depth in depths:
+            last_node_count = 1
+            for i, depth in enumerate(depths):
+                # self.nodes = 0 - reset by minimax / alphabeta routines
+                start_time = curr_time_millis()
                 _, best = self.fn(game, depth, maximizing_player=True)
-                if self.time_left() < 13 * self.TIMER_THRESHOLD:
+                elapsed = curr_time_millis() - start_time
+                time_left = self.time_left()
+                time_per_node = elapsed / self.nodes
+
+                branch_factor = self.nodes / last_node_count
+                # If you take the next largest integer branch factor, you could
+                # probably reduce the time limit factor..
+                # branch_factor = ceil(branch_factor)
+
+                # id_nodes = ((branch_factor ** depth) - 1)
+                # id_nodes /= (branch_factor - 1)
+
+                next_level = (branch_factor ** (depth))
+                # Not (depth+1), as our depth iterator already starts at 1
+                pred_nodes = self.nodes + next_level
+                pred_time = pred_nodes * time_per_node
+
+                if debug:
+                    if not i: print()
+                    print(msg % (i, depth, self.nodes, elapsed), end='  ')
+                    print('time left: %6.2fms' % time_left, end='  ')
+                    print('time/node: %6.2fμs'%(time_per_node*1000),end='  ')
+                    print('branch factor: %3.1f' % branch_factor,end='  ')
+                    print('pred nodes: %7.1f' % pred_nodes, end='  ')
+                    print('pred time: %7.2f' % pred_time)
+                last_node_count = self.nodes
+                limit = limit_factor * pred_time
+                # if self.time_left() < 13 * self.TIMER_THRESHOLD:
+                if time_left < limit:
+                    if debug: print('limit exceeded', limit)
                     break
 
         except Timeout:
@@ -147,6 +189,7 @@ class CustomPlayer:
             pass
 
         # Return the best move from the last completed search iteration
+        # print('Returning with %6.2fms on the clock' % self.time_left())
         return best
 
     def cut_off_test(self, game, depth):
@@ -169,6 +212,7 @@ class CustomPlayer:
         v = float('-inf') if maximise else float('inf')
 
         for move in game.get_legal_moves():
+            self.nodes += 1
             args = (game.forecast_move(move), deeper, max_or_min, alphabeta)
             if alphabeta:
                 args += (alpha, beta)
@@ -279,6 +323,7 @@ class CustomPlayer:
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
+        self.nodes = 0
         return self._minimax_alphabeta(game, depth, maximizing_player,
                                        alphabeta=False)
 
@@ -326,6 +371,7 @@ class CustomPlayer:
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
+        self.nodes = 0
         return self._minimax_alphabeta(game, depth, maximizing_player, True,
                                        float('-inf'), float('inf'))
 
