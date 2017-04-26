@@ -33,8 +33,18 @@ from sample_players import improved_score
 from game_agent import CustomPlayer
 from game_agent import custom_score
 
+from sample_players import weighted_moves_score, reachable_score
+from sample_players import cut_off_reach_score
+
 NUM_MATCHES = 5  # number of matches against each opponent
 TIME_LIMIT = 150  # number of milliseconds before timeout
+
+custom_heuristics = [
+    ('Weighted_Moves', weighted_moves_score),
+    ('Reachable', reachable_score),
+    ('Cut_off_Reach', cut_off_reach_score),
+]
+
 
 TIMEOUT_WARNING = "One or more agents lost a match this round due to " + \
                   "timeout. The get_move() function must return before " + \
@@ -103,7 +113,7 @@ def play_match(player1, player2):
             num_wins[player2], num_timeouts[player2])
 
 
-def play_round(agents, num_matches):
+def play_round(agents, num_matches, show_timeouts=False):
     """
     Play one round (i.e., a single match between each pair of opponents)
     """
@@ -133,11 +143,16 @@ def play_round(agents, num_matches):
 
         wins += counts[agent_1.player]
 
-        print("\tResult: {}/{} to {}/{}".format(int(counts[agent_1.player]),
-                                                int(touts[agent_1.player]),
-                                                int(counts[agent_2.player]),
-                                                int(touts[agent_2.player])
-                                                ))
+        if show_timeouts:
+            print("\tResult: {}/{} to {}/{}".format(int(counts[agent_1.player]),
+                                                    int(touts[agent_1.player]),
+                                                    int(counts[agent_2.player]),
+                                                    int(touts[agent_2.player])
+                                                    ))
+        else:
+            print("\tResult: {} to {}".format(int(counts[agent_1.player]),
+                                              int(counts[agent_2.player]),
+                                             ))
 
     return 100. * wins / total
 
@@ -176,8 +191,11 @@ def main():
                        ('Student', custom_score)]
     test_agents = [create_agent(CUSTOM_ARGS, h) for h in test_heuristics]
 
+    custom_agents = [create_agent(CUSTOM_ARGS, h) for h in custom_heuristics]
+
     print(DESCRIPTION)
-    for agentUT in test_agents:
+
+    for agentUT in test_agents[:0]:
         print("")
         print("*************************")
         print("{:^25}".format("Evaluating: " + agentUT.name))
@@ -186,6 +204,21 @@ def main():
         agents = random_agents + mm_agents + ab_agents + [agentUT]
         win_ratio = play_round(agents, NUM_MATCHES)
 
+        print("\n\nResults:")
+        print("----------")
+        print("{!s:<18}{:>10.2f}%".format(agentUT.name, win_ratio))
+
+    agentUT = test_agents[0]
+    # agents = custom_agents + [agentUT]
+
+    for agent in custom_agents:
+        compete = [agent]*10 + [agentUT]
+        print("")
+        print("*************************")
+        print("{:^25}".format("Evaluating: " + agentUT.name + " against Student's custom heuristics"))
+        print("*************************")
+        win_ratio = play_round(compete, NUM_MATCHES)
+    
         print("\n\nResults:")
         print("----------")
         print("{!s:<18}{:>10.2f}%".format(agentUT.name, win_ratio))
