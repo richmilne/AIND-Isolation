@@ -47,8 +47,15 @@ class MyBoard(object):
         if board_encoding is None:
             self.current = [None, None]
         else:
+            # print()
+            # print('unpacking:', board_encoding)
+            # print('bitmap:', self.enc.format_bitmap(board_encoding))
             coords = self.enc.integer_to_coords(board_encoding)
+            # print('all empty:', sorted(empty))
+            # print('current coords:', coords)
             for i, coord in enumerate(coords):
+                if i < 2 and coord is None: continue
+                # print('  checking coord:', coord)
                 assert coord in empty
                 if i >= 2:
                     empty.remove(coord)
@@ -82,6 +89,7 @@ class MyBoard(object):
         new_board.offset = self.offset
         new_board.empty = self.empty.copy()
         new_board.current = self.current[:]
+        new_board.enc = self.enc
         return new_board
 
     def valid_moves(self, player):

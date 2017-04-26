@@ -25,12 +25,13 @@ def create_encoding_class(dim):
     assert dim % 2 != 0
     offset = dim // 2
 
-    MAX_COORD = (2**dim)-1
-    assert dim**2 <= MAX_COORD
-    # Which will always be the case, unless dim = 4.257464804
     NUM_CELLS = dim * dim
 
-    BIT_STRING_LEN = dim + dim + NUM_CELLS
+    dim_ = 4 if dim == 3 else dim
+    MAX_COORD = (2**dim_)-1
+    BIT_STRING_LEN = dim_ + dim_ + NUM_CELLS
+    assert dim**2 <= MAX_COORD
+    # Which will always be the case, unless dim <= 4.257464804
 
     # Translate co-ords so that board rotations can be done about the centre
     # xlate all board co-ords up and to left
@@ -48,7 +49,7 @@ def create_encoding_class(dim):
 
         def format_bitmap(self, bitmap):
             bit_str = bin(bitmap)[2:].zfill(BIT_STRING_LEN)
-            components = (bit_str[:dim], bit_str[dim:2*dim], bit_str[2*dim:])
+            components = (bit_str[:dim_], bit_str[dim_:2*dim_], bit_str[2*dim_:])
             return ' '.join(components)
 
         def encode_player(self, coord):
@@ -73,7 +74,7 @@ def create_encoding_class(dim):
 
         def coords_to_integer(self, coords, offset=down_rt):
             number = self.encode_player(offset(coords[0]))
-            number = (number << dim) + self.encode_player(offset(coords[1]))
+            number = (number << dim_) + self.encode_player(offset(coords[1]))
             number <<= NUM_CELLS
             for coord in coords[2:]:
                 number |= self.coord_to_bitmap(offset(coord))
@@ -83,7 +84,7 @@ def create_encoding_class(dim):
             coords = [offset(b) for b in self.bitmap_to_coords(number)]
             number >>= NUM_CELLS
             player2 = offset(self.decode_player(number))
-            number >>= dim
+            number >>= dim_
             player1 = offset(self.decode_player(number))
 
             return [player1, player2] + sorted(coords)
