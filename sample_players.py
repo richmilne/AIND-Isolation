@@ -1,5 +1,9 @@
 """This file contains a collection of player classes for comparison with your
 own agent and example heuristic functions.
+
+    ************************************************************************
+    ***********  YOU DO NOT NEED TO MODIFY ANYTHING IN THIS FILE  **********
+    ************************************************************************
 """
 
 import random
@@ -195,6 +199,39 @@ def cut_off_reach_score(game, player):
     return float(score + cut_off_bonus)
 
 
+def center_score(game, player):
+    """Outputs a score equal to square of the distance from the center of the
+    board to the position of the player.
+
+    This heuristic is only used by the autograder for testing.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : hashable
+        One of the objects registered by the game object as a valid player.
+        (i.e., `player` should be either game.__player_1__ or
+        game.__player_2__).
+
+    Returns
+    ----------
+    float
+        The heuristic value of the current game state
+    """
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    w, h = game.width / 2., game.height / 2.
+    y, x = game.get_player_location(player)
+    return float((h - y)**2 + (w - x)**2)
+
+
 class RandomPlayer():
     """Player that chooses a move randomly."""
 
@@ -222,6 +259,7 @@ class RandomPlayer():
             A randomly selected legal move; may return (-1, -1) if there are
             no available legal moves.
         """
+        # legal_moves = game.get_legal_moves()
         return (-1, -1) if not legal_moves else random.choice(legal_moves)
 
 
@@ -259,7 +297,7 @@ class GreedyPlayer():
             for the current game state; may return (-1, -1) if there are no
             legal moves.
         """
-
+        # legal_moves = game.get_legal_moves()
         if not legal_moves:
             return (-1, -1)
         _, move = max([(self.score(game.forecast_move(m), self), m) for m in legal_moves])
@@ -301,9 +339,11 @@ class HumanPlayer():
             terminal prompt; automatically return (-1, -1) if there are no
             legal moves
         """
+        # legal_moves = game.get_legal_moves()
         if not legal_moves:
             return (-1, -1)
 
+        print(game.to_string()) #display the board for the human player
         print(('\t'.join(['[%d] %s' % (i, str(move)) for i, move in enumerate(legal_moves)])))
 
         valid_choice = False
@@ -331,7 +371,7 @@ if __name__ == "__main__":
 
     # place player 1 on the board at row 2, column 3, then place player 2 on
     # the board at row 0, column 5; display the resulting board state.  Note
-    # that .apply_move() changes the calling object
+    # that the .apply_move() method changes the calling object in-place.
     game.apply_move((2, 3))
     game.apply_move((0, 5))
     print(game.to_string())
@@ -351,7 +391,7 @@ if __name__ == "__main__":
     print("\nNew state:\n{}".format(new_game.to_string()))
 
     # play the remainder of the game automatically -- outcome can be "illegal
-    # move" or "timeout"; it should _always_ be "illegal move" in this example
+    # move", "timeout", or "forfeit"
     winner, history, outcome = game.play()
     print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
     print(game.to_string())
