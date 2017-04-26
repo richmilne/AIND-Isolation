@@ -14,6 +14,8 @@ from math import ceil
 
 curr_time_millis = lambda: 1000 * timeit.default_timer()
 
+from sample_players import cut_off_reach_score
+
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
     pass
@@ -41,9 +43,7 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
-from sample_players import improved_score as custom_score
+    return cut_off_reach_score(game, player)
 
 
 class CustomPlayer:
@@ -122,23 +122,18 @@ class CustomPlayer:
             Board coordinates corresponding to a legal move; may return
             (-1, -1) if there are no available legal moves.
         """
+        best = (-1, -1) if not legal_moves else random.choice(legal_moves)
         if not legal_moves:
-            return (-1, -1)
+            return best
 
         self.time_left = time_left
-
-        # TODO: finish this function!
 
         # Perform any required initializations, including selecting an initial
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
-        best = (-1, -1)
-        if self.iterative:
-            depths = itertools.count(1)
-        else:
-            depths = (self.search_depth,)
+        depths = itertools.count(1) if self.iterative else (self.search_depth,)
 
-        limit_factor = 1#3.2
+        limit_factor = 1
         msg = 'i:%3d  depth:%3d  nodes: %4d  time: %6.2fms'
         debug = 0
         # self.nodes = 0
@@ -198,7 +193,7 @@ class CustomPlayer:
                 last_layer = this_layer
                 last_node_count = self.nodes
                 limit = limit_factor * pred_time
-                # if self.time_left() < 13 * self.TIMER_THRESHOLD:
+
                 if time_left < limit:
                     if debug: print('limit exceeded', limit)
                     break
@@ -220,8 +215,11 @@ class CustomPlayer:
             return (True, self.score(game, self), (-1, -1))
         return (False, None, (-1, -1))
 
-    def _minimax_alphabeta(self, game, depth, maximise, alphabeta,
+    def _minimax_alphabeta(self, game, depth, maximise, alphabeta=False,
                            alpha=None, beta=None):
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise Timeout()
 
         cut_off, score, move = self.cut_off_test(game, depth)
         if cut_off: return score, move
@@ -231,7 +229,8 @@ class CustomPlayer:
         max_or_min = not maximise
         v = float('-inf') if maximise else float('inf')
 
-        for move in game.get_legal_moves():
+        legal_moves = game.get_legal_moves()
+        for move in legal_moves:
             self.nodes += 1
             args = (game.forecast_move(move), deeper, max_or_min, alphabeta)
             if alphabeta:
@@ -247,67 +246,7 @@ class CustomPlayer:
                 if cmp: break
                 alpha, beta = ((max(alpha, v), beta) if maximise else
                                (alpha,  min(beta, v)))
-            # if self.time_left() < self.TIMER_THRESHOLD: break
-        return v, best
 
-    def __max_value(self, game, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('-inf')
-        best = None
-        for move in game.get_legal_moves():
-            score, _ = self.__min_value(game.forecast_move(move), depth-1)
-            if score > v:
-                v, best = score, move
-        return v, best
-
-    def __min_value(self, game, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('inf')
-        best = None
-        for move in game.get_legal_moves():
-            score, _ = self.__max_value(game.forecast_move(move), depth-1)
-            if score < v:
-                v, best = score, move
-        return v, best
-
-    def __alphabeta_max_value(self, game, alpha, beta, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('-inf')
-        best = None
-        for move in game.get_legal_moves(self):
-            args = (game.forecast_move(move), alpha, beta, depth-1)
-            score, _ = self.__alphabeta_min_value(*args)
-            if score > v:
-                v, best = score, move
-            if v >= beta:
-                break
-            alpha = max(alpha, v)
-        return v, best
-
-    def __alphabeta_min_value(self, game, alpha, beta, depth):
-
-        cut_off, score, move = self.cut_off_test(game, depth)
-        if cut_off: return score, move
-
-        v = float('inf')
-        best = None
-        for move in game.get_legal_moves():
-            args = (game.forecast_move(move), alpha, beta, depth-1)
-            score, _ = self.__alphabeta_max_value(*args)
-            if score < v:
-                v, best = score, move
-            if v <= alpha:
-                break
-            beta = min(beta, v)
         return v, best
 
     def minimax(self, game, depth, maximizing_player=True):
@@ -342,7 +281,7 @@ class CustomPlayer:
                 evaluation function directly.
         """
         self.nodes = 1
-        return self._minimax_alphabeta(game, depth, maximizing_player, False)
+        return self._minimax_alphabeta(game, depth, maximizing_player)
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -384,4 +323,4 @@ class CustomPlayer:
         """
         self.nodes = 1
         return self._minimax_alphabeta(game, depth, maximizing_player, True,
-                                       float('-inf'), float('inf'))
+                                                                    alpha, beta)
