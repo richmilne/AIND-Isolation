@@ -8,6 +8,7 @@ SETTINGS = {
     "isolation": {
         "required": {
             "game_agent": {"ext": ["py"], "size": 0.2},
+            "my_heuristics": {"ext": ["py"], "size": 0.2},
         },
         "optional": {
             "heuristic_analysis": {"ext": ["pdf"], "size": 6.0},

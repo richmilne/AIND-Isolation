@@ -10,7 +10,8 @@ relative strength using tournament.py and include the results in your report.
 import itertools
 import random
 
-from sample_players import cut_off_reach_score
+from my_heuristics import weighted_moves_score, reachable_score
+from my_heuristics import cut_off_reach_score
 
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
@@ -66,9 +67,7 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
-
+    return reachable_score(game, player)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -92,9 +91,7 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
-
+    return weighted_moves_score(game, player)
 
 class CustomPlayer:
     """Game-playing agent that chooses a move using your evaluation function
@@ -209,7 +206,14 @@ class CustomPlayer:
 
     def _minimax_alphabeta(self, game, depth, maximise, alphabeta=False,
                            alpha=None, beta=None):
-
+        # This function consolidates the original individual minimax and alpha-
+        # beta functions to eliminate redundant code and simplify maintenance.
+        # If you'd like to see the original, stand-alone functions, based on
+        # the pseudo-code functions at
+        # https://github.com/aimacode/aima-pseudocode/blob/master/md/Minimax-Decision.md
+        #                                 and
+        # https://github.com/aimacode/aima-pseudocode/blob/master/md/Alpha-Beta-Search.md
+        # see commit 58234398f6d6852b203822d1dd1bac185166607e in this repo.
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
 

@@ -30,11 +30,11 @@ from sample_players import RandomPlayer
 from sample_players import null_score
 from sample_players import open_move_score
 from sample_players import improved_score
+from sample_players import center_score
 from game_agent import CustomPlayer
-from game_agent import custom_score
 
-from sample_players import weighted_moves_score, reachable_score
-from sample_players import cut_off_reach_score
+from my_heuristics import weighted_moves_score, reachable_score
+from my_heuristics import cut_off_reach_score
 
 NUM_MATCHES = 5  # number of matches against each opponent
 TIME_LIMIT = 150  # number of milliseconds before timeout
@@ -157,11 +157,12 @@ def play_round(agents, num_matches, show_timeouts=False):
     return 100. * wins / total
 
 
-def main():
+def main(test_all=True):
 
     HEURISTICS = [("Null", null_score),
                   ("Open", open_move_score),
-                  ("Improved", improved_score)]
+                  ("Improved", improved_score),
+                  ("Center", center_score)]
     AB_ARGS = {"search_depth": 5, "method": 'alphabeta', "iterative": False}
     MM_ARGS = {"search_depth": 3, "method": 'minimax', "iterative": False}
     CUSTOM_ARGS = {"method": 'alphabeta', 'iterative': True}
@@ -188,41 +189,46 @@ def main():
     # relative to the performance of the ID_Improved agent to account for
     # faster or slower computers.
     test_heuristics = [('ID_Improved', improved_score),
-                       ('Student', custom_score)]
+                       ('Weighted Moves', weighted_moves_score),
+                       ('Reachable', reachable_score),
+                       ('Cut-off Reachable', cut_off_reach_score)]
     test_agents = [create_agent(CUSTOM_ARGS, h) for h in test_heuristics]
 
     custom_agents = [create_agent(CUSTOM_ARGS, h) for h in custom_heuristics]
 
     print(DESCRIPTION)
 
-    for agentUT in test_agents[:0]:
-        print("")
-        print("*************************")
-        print("{:^25}".format("Evaluating: " + agentUT.name))
-        print("*************************")
+    if test_all:
 
-        agents = random_agents + mm_agents + ab_agents + [agentUT]
-        win_ratio = play_round(agents, NUM_MATCHES)
-
-        print("\n\nResults:")
-        print("----------")
-        print("{!s:<18}{:>10.2f}%".format(agentUT.name, win_ratio))
-
-    agentUT = test_agents[0]
-    # agents = custom_agents + [agentUT]
-
-    for agent in custom_agents:
-        compete = [agent]*10 + [agentUT]
-        print("")
-        print("*************************")
-        print("{:^25}".format("Evaluating: " + agentUT.name + " against Student's custom heuristics"))
-        print("*************************")
-        win_ratio = play_round(compete, NUM_MATCHES)
+        for agentUT in test_agents:#[:0]:
+            print("")
+            print("*************************")
+            print("{:^25}".format("Evaluating: " + agentUT.name))
+            print("*************************")
     
-        print("\n\nResults:")
-        print("----------")
-        print("{!s:<18}{:>10.2f}%".format(agentUT.name, win_ratio))
+            agents = random_agents + mm_agents + ab_agents + [agentUT]
+            win_ratio = play_round(agents, NUM_MATCHES)
+    
+            print("\n\nResults:")
+            print("----------")
+            print("{!s:<18}{:>10.2f}%".format(agentUT.name, win_ratio))
 
+    else:
+        agentUT = test_agents[0]
+        # agents = custom_agents + [agentUT]
+    
+        for agent in custom_agents:
+            compete = [agent]*10 + [agentUT]
+            print("")
+            print("*************************")
+            print("{:^25}".format("Evaluating: " + agentUT.name + " against Student's custom heuristics"))
+            print("*************************")
+            win_ratio = play_round(compete, NUM_MATCHES)
+        
+            print("\n\nResults:")
+            print("----------")
+            print("{!s:<18}{:>10.2f}%".format(agentUT.name, win_ratio))
+    
 
 if __name__ == "__main__":
     main()
